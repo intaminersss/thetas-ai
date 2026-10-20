@@ -144,9 +144,10 @@ test('E2E: /start → HERO animation + caption + tiered menu keyboard', async ()
   assert.ok(hero, 'sendAnimation called');
   assert.ok(String(hero.args[2]).includes('Welcome'), 'caption greets user');
   const kb = hero.args[3];
-  assert.ok(kb.inline_keyboard.length >= 5, 'tiered keyboard rows');
-  assert.strictEqual(kb.inline_keyboard[0][0].style, 'primary', 'primary action styled');
+  assert.ok(kb.inline_keyboard.length === 4, 'clean 4-row keyboard');
+  assert.ok(kb.inline_keyboard[0][0].callback_data === 'menu:ads', 'My Ads first (primary)');
   assert.ok(kb.inline_keyboard.flat().every(b => b.callback_data), 'all buttons wired');
+  assert.ok(kb.inline_keyboard.flat().some(b => b.callback_data === 'menu:more'), 'More holds secondary tools');
 });
 
 test('E2E: every menu button routes to its screen (10/10)', async () => {
@@ -444,7 +445,7 @@ test('E2E: feature hub — desk button, catalog pages, ALL 50+ features render, 
   reset();
   await app.onUpdate(cbUpdate('menu:main'));
   const desk = lastOf('edit');
-  assert.ok(desk.args[3].inline_keyboard.flat().some(b => b.callback_data === 'feat:p:0'), 'desk has All-features button');
+  assert.ok(desk.args[3].inline_keyboard.flat().some(b => b.callback_data === 'menu:more'), 'desk routes secondary via More');
   reset();
   await app.onUpdate(cbUpdate('feat:p:0'));
   assert.ok(/ALL FEATURES/.test(String(lastOf('edit').args[2])), 'catalog page 1');

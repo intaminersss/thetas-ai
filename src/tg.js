@@ -99,6 +99,7 @@ async function sendAnimation(chatId, filePath, caption, kb) {
   const fd = new FormData();
   fd.append('chat_id', String(chatId));
   if (caption) fd.append('caption', String(caption).slice(0, 1024)); // official caption limit for media
+  fd.append('parse_mode', 'HTML'); // v7.1 fix: welcome caption rendered as HTML, not raw tags
   if (kb) fd.append('reply_markup', JSON.stringify(kb));
   fd.append('animation', new Blob([buf], { type: 'image/gif' }), filePath.split('/').pop());
   const res = await fetch(`${API}/sendAnimation`, { method: 'POST', body: fd });

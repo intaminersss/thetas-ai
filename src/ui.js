@@ -92,11 +92,17 @@ function pagerRows(page, pages, base) {
 
 /* Tiered menu — Operate / Automate / System (skill: group by meaning, primary action stands out) */
 const MENU = kb([
-  [{ t: '📊  My Ads — live board', c: 'menu:ads', style: 'primary' }, { t: '🧪  Test Ad', c: 'menu:testad', style: 'success' }],
-  [{ t: '🔬  Research', c: 'menu:res' }, { t: '📦  Packages', c: 'menu:pkg' }, { t: '✍️  Copy', c: 'menu:copy' }],
-  [{ t: '📋  Drafts', c: 'menu:drafts' }, { t: '📈  Reports', c: 'menu:rep' }, { t: '🏦  Accounts', c: 'menu:acc' }],
-  [{ t: '🔔  Alerts', c: 'menu:alr' }, { t: '🩺 Health', c: 'menu:health' }, { t: 'ℹ️ About', c: 'menu:about' }],
-  [{ t: '📜  All 50+ features', c: 'feat:p:0' }]
+  [{ t: '📊  My Ads', c: 'menu:ads', style: 'primary' }, { t: '📈  Reports', c: 'menu:rep', style: 'primary' }],
+  [{ t: '🧪  New Test Ad', c: 'menu:testad', style: 'success' }],
+  [{ t: '🔬  Research', c: 'menu:res' }, { t: '✍️  AI Copy', c: 'menu:copy' }, { t: '📦  Packages', c: 'menu:pkg' }],
+  [{ t: '⚙️  More', c: 'menu:more' }]
+]);
+
+const MORE = kb([
+  [{ t: '📋  Drafts', c: 'menu:drafts' }, { t: '🔔  Alerts', c: 'menu:alr' }],
+  [{ t: '🏦  Accounts', c: 'menu:acc' }, { t: '🩺  Health', c: 'menu:health' }],
+  [{ t: '📜  All 50+ features', c: 'feat:p:0' }, { t: 'ℹ️  About', c: 'menu:about' }],
+  [{ t: '⬅️  Back to Home', c: 'menu:main' }]
 ]);
 
 function toCsv(rows) {
@@ -190,4 +196,4 @@ const catalogPage = p => {
 };
 const feature = idx => (CATALOG[idx] != null ? { ...CATALOG[idx], idx } : null);
 
-module.exports = { esc, BRAND, header, pill, PILL, bar, SPIN, spin, num, inr, ton, cemoji, hasCustom, adRow, adsBoard, budgetMeter, kb, pagerRows, MENU, toCsv, CATALOG, SECTION_META, catalogSection, catalogPage, feature };
+module.exports = { esc, BRAND, header, pill, PILL, bar, SPIN, spin, num, inr, ton, cemoji, hasCustom, adRow, adsBoard, budgetMeter, kb, pagerRows, MENU, MORE, toCsv, CATALOG, SECTION_META, catalogSection, catalogPage, feature };

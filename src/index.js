@@ -5,7 +5,7 @@ const { config, redact } = require('./config');
 const tg = require('./tg');
 const guard = require('./guard');
 const fmt = require('./format');
-const { MENU } = fmt;
+const { MENU, MORE } = fmt;
 
 const ads = require('./handlers/ads');
 const research = require('./handlers/research');
@@ -57,6 +57,12 @@ function makeCtx(u) {
 async function routeMenu(ctx, sub) {
   switch (sub) {
     case 'main': case undefined: return mainMenu(ctx);
+    case 'more': return ctx.editOrSend([
+      `${fmt.header('⚙️', 'MORE TOOLS')}`,
+      'Everything else — drafts, alert tuning, accounts, diagnostics.',
+      '',
+      `<i>${fmt.BRAND.credit}</i>`
+    ].join('\n'), MORE);
     case 'ads': return wrap(ctx, () => ads.adsMenu(ctx));
     case 'res': return wrap(ctx, () => research.researchMenu(ctx));
     case 'pkg': return wrap(ctx, () => packages.menu(ctx));
