@@ -1,0 +1,19 @@
+name: scheduler-tick
+# Pings the THETAS AI scheduler endpoint every 5 minutes so balance alerts,
+# live per-ad alerts and status-change pings run near-realtime on Vercel.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping scheduler
+        shell: bash
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 25 "$CRON_URL") || true
+          echo "scheduler ping -> $code"
+          [ "$code" = "200" ] || { echo "::warning::scheduler ping returned $code"; exit 1; }
+        env:
+          CRON_URL: ${{ secrets.CRON_URL }}
