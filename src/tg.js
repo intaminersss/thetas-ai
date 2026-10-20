@@ -85,9 +85,22 @@ const edit = (chatId, msgId, text, kb) => call('editMessageText', {
 
 const answerCb = (id, text) => call('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}) }).catch(() => {});
 
-const sendDoc = (chatId, filename, content, caption) => call('sendDocument', {
-  chat_id: chatId, document: { filename, data: Buffer.from(content, 'utf8') }, caption
-});
+/* v7.2.1: sendDocument via multipart — the old JSON-body version serialized the Buffer
+   into {"type":"Buffer",...}, Telegram read it as a URL string → "invalid file HTTP
+   URL specified" on every report/CSV send. Same pattern as sendAnimation. */
+async function sendDoc(chatId, filename, content, caption) {
+  const fd = new FormData();
+  fd.append('chat_id', String(chatId));
+  fd.append('document', new Blob([Buffer.from(String(content), 'utf8')]), filename);
+  if (caption) {
+    fd.append('caption', String(caption).slice(0, 1024));
+    fd.append('parse_mode', 'HTML');
+  }
+  const res = await fetch(`${API}/sendDocument`, { method: 'POST', body: fd });
+  const j = await res.json().catch(() => ({ ok: false, description: `bad-json HTTP ${res.status}` }));
+  if (!j.ok) throw new Error(redact(j.description || `HTTP ${res.status}`));
+  return j.result;
+}
 
 /* typing indicator — honest "working" feedback (skill: dynamic feedback layer) */
 const typing = chatId => call('sendChatAction', { chat_id: chatId, action: 'typing' }).catch(() => {});
