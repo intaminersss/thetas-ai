@@ -116,4 +116,24 @@ async function tick(log) {
 }
 
 function start(log) { setInterval(() => tick(log).catch(e => log(`scheduler: ${e.message}`)), 5 * 60 * 1000).unref(); log('scheduler started (5-min tick)'); }
-module.exports = { start, tick };
+
+/* Serverless lazy-tick: atomically claim the next run via a dedicated
+   agency_settings key (5-min min gap). Returns true only if this invocation
+   won the claim and tick() ran — safe under concurrent lambda instances. */
+const TICK_KEY = 'last_sched_tick';
+async function maybeTick(log, gapMs = 5 * 60e3) {
+  try {
+    const now = Date.now();
+    const won = await db.q(
+      `insert into agency_settings(key,value) values ($1,$2)
+       on conflict (key) do update set value = excluded.value
+       where (agency_settings.value::bigint + $3::bigint) < $2::bigint
+       returning value`,
+      [TICK_KEY, String(now), String(gapMs)]);
+    if (!won || !won.length) return false;
+    await tick(log);
+    return true;
+  } catch (e) { if (log) log(`maybeTick: ${e.message}`); return false; }
+}
+
+module.exports = { start, tick, maybeTick };

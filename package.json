@@ -2,7 +2,7 @@
   "name": "thetas-ai",
   "version": "1.0.0",
   "private": true,
-  "description": "THETAS AI — Telegram-native advertising assistant. Fully Built By Agency @TelesAds (Telesads.com). Official Telegram Ads API + research + AI.",
+  "description": "THETAS AI \u2014 Telegram-native advertising assistant. Fully Built By Agency @TelesAds (Telesads.com). Official Telegram Ads API + research + AI.",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -14,7 +14,8 @@
   "dependencies": {
     "pg": "^8.23.1",
     "pino": "^10.4.0",
-    "zod": "^4.6.6"
+    "zod": "^4.6.6",
+    "@vercel/functions": "^1.6.0"
   },
   "directories": {
     "test": "test"
