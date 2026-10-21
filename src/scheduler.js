@@ -112,6 +112,49 @@ async function tick(log) {
       }
       await db.q(`insert into agency_settings(key,value) values ('ad_statuses',$1) on conflict (key) do update set value=$1`, [JSON.stringify(cur)]);
     } catch (e) { log(`status alerts: ${e.message}`); }
+    /* NIGHT GUARD — pacing guard: any fleet ad burning faster than NIGHT_GUARD_RATE
+       TON/h gets paused (budget preserved) and auto-resumed after NIGHT_GUARD_HOLD_H
+       hours. Keeps a multi-day run alive; every pause/resume pings the owner. */
+    try {
+      const RATE = Number(process.env.NIGHT_GUARD_RATE || 0.8);      // TON/h per ad
+      const HOLD_H = Number(process.env.NIGHT_GUARD_HOLD_H || 6);    // pause window
+      const MIN_ID = Number(process.env.NIGHT_GUARD_MIN_ID || 140);  // guard fleet from this id up
+      const all = (await adsapi.getAdsList().catch(() => [])) || [];
+      const fleet = all.filter(a => a.ad_id >= MIN_ID && (a.remaining_budget || 0) > 0.05);
+      const stRow = (await db.q(`select value from agency_settings where key='pace_guard_state'`))?.[0]?.value;
+      const st = stRow ? JSON.parse(stRow) : { snap: {}, held: {} };
+      st.held = st.held || {}; st.snap = st.snap || {};
+      const now = Date.now();
+      /* resume held ads whose hold window ended (still-stopped ads just drop out) */
+      for (const [id, meta] of Object.entries(st.held)) {
+        if (now - meta.at < HOLD_H * 3600e3) continue;
+        const ad = all.find(x => x.ad_id === Number(id));
+        if (!ad || ad.status === 'stopped') { delete st.held[id]; continue; }
+        try {
+          await adsapi.editAd(Number(id), { is_paused: false });
+          delete st.held[id];
+          await tg.sm(OWNER(), `🌅 <b>Night Guard resume</b>: #${id} wapas LIVE (${((now - meta.at) / 3600e3).toFixed(1)}h hold, ${meta.rem}T bacha, tha ${meta.rate} TON/h).`).catch(() => {});
+        } catch (e) { log(`guard resume #${id}: ${e.message}`); }
+      }
+      /* velocity check — needs a previous snapshot at least 12 min old */
+      const prev = st.snap; const dtH = (now - (st.snapAt || 0)) / 3600e3;
+      if (dtH >= 0.2) {
+        for (const a of fleet) {
+          if (st.held[a.ad_id] || prev[a.ad_id] == null) continue;
+          const rate = ((a.spent_budget || 0) - prev[a.ad_id]) / dtH;
+          if (rate > RATE && a.status === 'active' && !a.is_paused) {
+            try {
+              await adsapi.editAd(a.ad_id, { is_paused: true });
+              st.held[a.ad_id] = { at: now, rate: rate.toFixed(2), rem: (a.remaining_budget || 0).toFixed(2) };
+              await tg.sm(OWNER(), `🌙 <b>Night Guard</b>: #${a.ad_id} PAUSED — ${rate.toFixed(2)} TON/h (limit ${RATE}). ${(a.remaining_budget || 0).toFixed(2)}T safe. ~${HOLD_H}h baad auto-resume.`).catch(() => {});
+            } catch (e) { log(`guard pause #${a.ad_id}: ${e.message}`); }
+          }
+        }
+      }
+      st.snap = Object.fromEntries(fleet.map(a => [a.ad_id, a.spent_budget || 0]));
+      st.snapAt = now;
+      await db.q(`insert into agency_settings(key,value) values ('pace_guard_state',$1) on conflict (key) do update set value=$1`, [JSON.stringify(st)]);
+    } catch (e) { log(`night guard: ${e.message}`); }
   } finally { running = false; }
 }
 
